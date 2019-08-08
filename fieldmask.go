@@ -4,18 +4,29 @@ import (
 	"google.golang.org/genproto/protobuf/field_mask"
 )
 
-type GetMasker interface {
-	GetMask() *field_mask.FieldMask
-}
-
-type Applicator interface {
-	Apply([]MaskUpdate)
-}
+type (
+	GetMasker interface {
+		GetMask() *field_mask.FieldMask
+	}
+	Applicator interface {
+		Apply()
+	}
+	MaskApplicator interface {
+		ApplyMask([]MaskUpdate)
+	}
+)
 
 type MaskUpdate func() error
 
 type Update struct {
-	updates []MaskUpdate
+	updates    []MaskUpdate
+	applicator MaskApplicator
+}
+
+func NewUpdate(a MaskApplicator) Applicator {
+	return &Update{
+		applicator: a,
+	}
 }
 
 func (u *Update) SetMaskFunc(m GetMasker, path string, update MaskUpdate) {
@@ -26,6 +37,6 @@ func (u *Update) SetMaskFunc(m GetMasker, path string, update MaskUpdate) {
 	}
 }
 
-func (u *Update) Apply(a Applicator) {
-	a.Apply(u.updates)
+func (u *Update) Apply() {
+	u.applicator.ApplyMask(u.updates)
 }
